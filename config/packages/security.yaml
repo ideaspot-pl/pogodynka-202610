@@ -6,15 +6,11 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory:
-            memory:
-                users:
-                    admin:
-#                        password: '12345678'
-                        password: '$2y$13$ez79w84V9s/okaKKeGpmDebLT1V148qH8vKO17TJCxoeZY4j04DkK'
-                        roles:
-                            - 'ROLE_ADMIN'
-                            - 'ROLE_USER'
+        # used to reload user from session & other features (e.g. switch_user)
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: username
 
     firewalls:
         dev:
@@ -23,19 +19,49 @@ security:
             security: false
         main:
             lazy: true
-            provider: users_in_memory
+            provider: app_user_provider
 
             # Activate different ways to authenticate:
             # https://symfony.com/doc/current/security.html#the-firewall
 
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
-            http_basic:
-                realm: 'My Secured Area'
+            form_login:
+                login_path: app_login
+                check_path: app_login
+            logout:
+                path: app_logout
 
     # Note: Only the *first* matching rule is applied
     access_control:
         - { path: ^/, roles: PUBLIC_ACCESS }
+
+    role_hierarchy:
+        ROLE_ADMIN:
+            - ROLE_USER
+            - ROLE_AG_LOCATION_WRITE
+            - ROLE_AG_MEASUREMENT_WRITE
+        ROLE_USER:
+            - ROLE_AG_LOCATION_READ
+            - ROLE_AG_MEASUREMENT_READ
+
+        ROLE_AG_LOCATION_READ:
+            - ROLE_LOCATION_INDEX
+            - ROLE_LOCATION_SHOW
+
+        ROLE_AG_MEASUREMENT_READ:
+            - ROLE_MEASUREMENT_INDEX
+            - ROLE_MEASUREMENT_SHOW
+
+        ROLE_AG_LOCATION_WRITE:
+            - ROLE_LOCATION_NEW
+            - ROLE_LOCATION_EDIT
+            - ROLE_LOCATION_DELETE
+
+        ROLE_AG_MEASUREMENT_WRITE:
+            - ROLE_MEASUREMENT_NEW
+            - ROLE_MEASUREMENT_EDIT
+            - ROLE_MEASUREMENT_DELETE
 
 when@test:
     security:
