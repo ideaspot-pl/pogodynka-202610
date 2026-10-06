@@ -17,35 +17,52 @@ final class WeatherApiController extends AbstractController
         #[MapQueryParameter('country')] string $country,
         #[MapQueryParameter('city')] string $city,
         #[MapQueryParameter('format')] string $format = 'json',
+        #[MapQueryParameter('twig')] bool $twig = false,
     ): Response
     {
         $measurements = $util->getWeatherForCountryAndCity($country, $city);
 
         if ($format === 'csv') {
-            $csv = "city,country,date,celsius\n";
-            $csv .= implode(
-                "\n",
-                array_map(fn(Measurement $m) => sprintf(
-                    '%s,%s,%s,%s',
-                    $city,
-                    $country,
-                    $m->getDate()->format('Y-m-d'),
-                    $m->getCelsius()
-                ), $measurements)
-            );
+            if ($twig) {
+                return $this->render('weather_api/index.csv.twig', [
+                    'city' => $city,
+                    'country' => $country,
+                    'measurements' => $measurements,
+                ]);
+            } else {
+                $csv = "city,country,date,celsius\n";
+                $csv .= implode(
+                    "\n",
+                    array_map(fn(Measurement $m) => sprintf(
+                        '%s,%s,%s,%s',
+                        $city,
+                        $country,
+                        $m->getDate()->format('Y-m-d'),
+                        $m->getCelsius()
+                    ), $measurements)
+                );
 
-            return new Response($csv, 200, [
+                return new Response($csv, 200, [
 //                'Content-Type' => 'text/csv',
-            ]);
+                ]);
+            }
         }
 
-        return $this->json([
-            'city' => $city,
-            'country' => $country,
-            'measurements' => array_map(fn(Measurement $m) => [
-                'date' => $m->getDate()->format('Y-m-d'),
-                'celsius' => $m->getCelsius(),
-            ], $measurements),
-        ]);
+        if ($twig) {
+            return $this->render('weather_api/index.json.twig', [
+                'city' => $city,
+                'country' => $country,
+                'measurements' => $measurements,
+            ]);
+        } else {
+            return $this->json([
+                'city' => $city,
+                'country' => $country,
+                'measurements' => array_map(fn(Measurement $m) => [
+                    'date' => $m->getDate()->format('Y-m-d'),
+                    'celsius' => $m->getCelsius(),
+                ], $measurements),
+            ]);
+        }
     }
 }
