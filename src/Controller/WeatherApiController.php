@@ -5,7 +5,7 @@ namespace App\Controller;
 use App\Entity\Measurement;
 use App\Service\WeatherUtil;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -16,9 +16,28 @@ final class WeatherApiController extends AbstractController
         WeatherUtil $util,
         #[MapQueryParameter('country')] string $country,
         #[MapQueryParameter('city')] string $city,
-    ): JsonResponse
+        #[MapQueryParameter('format')] string $format = 'json',
+    ): Response
     {
         $measurements = $util->getWeatherForCountryAndCity($country, $city);
+
+        if ($format === 'csv') {
+            $csv = "city,country,date,celsius\n";
+            $csv .= implode(
+                "\n",
+                array_map(fn(Measurement $m) => sprintf(
+                    '%s,%s,%s,%s',
+                    $city,
+                    $country,
+                    $m->getDate()->format('Y-m-d'),
+                    $m->getCelsius()
+                ), $measurements)
+            );
+
+            return new Response($csv, 200, [
+//                'Content-Type' => 'text/csv',
+            ]);
+        }
 
         return $this->json([
             'city' => $city,
