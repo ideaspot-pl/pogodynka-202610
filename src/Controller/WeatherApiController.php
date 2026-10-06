@@ -30,15 +30,16 @@ final class WeatherApiController extends AbstractController
                     'measurements' => $measurements,
                 ]);
             } else {
-                $csv = "city,country,date,celsius\n";
+                $csv = "city,country,date,celsius,fahrenheit\n";
                 $csv .= implode(
                     "\n",
                     array_map(fn(Measurement $m) => sprintf(
-                        '%s,%s,%s,%s',
+                        '%s,%s,%s,%s,%s',
                         $city,
                         $country,
                         $m->getDate()->format('Y-m-d'),
-                        $m->getCelsius()
+                        $m->getCelsius(),
+                        $m->getFahrenheit(),
                     ), $measurements)
                 );
 
@@ -61,6 +62,7 @@ final class WeatherApiController extends AbstractController
                 'measurements' => array_map(fn(Measurement $m) => [
                     'date' => $m->getDate()->format('Y-m-d'),
                     'celsius' => $m->getCelsius(),
+                    'fahrenheit' => $m->getFahrenheit(),
                 ], $measurements),
             ]);
         }
